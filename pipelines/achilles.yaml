@@ -1,0 +1,75 @@
+# Achilles — Go vulnerability scanner pipeline.
+# Second Origami reference implementation — proves the framework works for any domain.
+# Imports zero Asterisk domain code. Uses the same DSL, graph walk, extractors, and elements.
+pipeline: achilles
+description: "Achilles: scan a Go repository for known vulnerabilities, classify by severity, and produce a security assessment."
+
+zones:
+  discovery:
+    nodes: [scan]
+    element: earth
+    stickiness: 0
+  analysis:
+    nodes: [classify, assess]
+    element: fire
+    stickiness: 1
+  output:
+    nodes: [report]
+    element: air
+    stickiness: 0
+
+nodes:
+  - name: scan
+    element: earth
+    family: scan
+  - name: classify
+    element: fire
+    family: classify
+  - name: assess
+    element: diamond
+    family: assess
+  - name: report
+    element: air
+    family: report
+
+edges:
+  - id: V1
+    name: findings-ready
+    from: scan
+    to: classify
+    condition: "govulncheck produced output"
+
+  - id: V2
+    name: no-findings
+    from: scan
+    to: report
+    shortcut: true
+    condition: "zero vulnerabilities found"
+
+  - id: V3
+    name: classified
+    from: classify
+    to: assess
+    condition: "vulnerabilities grouped by severity"
+
+  - id: V4
+    name: critical-found
+    from: assess
+    to: report
+    condition: "risk score computed"
+
+  - id: V5
+    name: rescan
+    from: assess
+    to: scan
+    loop: true
+    condition: "transitive deps need deeper scan AND loops < max_loops"
+
+  - id: V6
+    name: done
+    from: report
+    to: _done
+    condition: "always (terminal)"
+
+start: scan
+done: _done
