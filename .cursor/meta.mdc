@@ -1,0 +1,39 @@
+---
+description: Portable meta-engineering rules for Cursor projects
+---
+
+# .cursor Meta Rules
+
+Purpose: portable structure rules to reuse across projects.
+
+This file is the binding structure contract. `.cursor/rules` must reference it.
+
+## Directory purposes
+- `rules/` — non-negotiable constraints and always-apply guidance.
+- `guide/` — software development workflows and process guidance.
+- `docs/` — deep library (long-form references and tomes).
+- `notes/` — short summaries and quick references.
+- `contracts/` — work contracts by lifecycle status: `draft/`, `active/`, `completed/{phase}/`. Urgency via `current-goal.mdc` manifest.
+- `security-cases/` — security bug post-mortems (RCA, severity, OWASP category, mitigation).
+- `prompts/` — prompt templates (file-based).
+- `strategy/` — long-term objectives and invariants.
+- `tactics/` — situational playbooks ("if X, do Y").
+- `taxonomy/` — naming and classification rules.
+- `glossary/` — domain terms and definitions.
+- `goals/` — goal checklist + per-goal detail files.
+- `skills/` — project-specific skill definitions.
+
+## Index rules
+- Every `.cursor` directory must contain a shallow `index.mdc`.
+- Indexes list only items directly inside their directory (no trees).
+- Always update the local `index.mdc` when files are added, removed, or renamed.
+- Index integrity is mandatory: any directory change without index update is incomplete.
+
+## File-System Context (FSC) pattern
+- Official name: **FSC (File-System Context)**.
+- FSC is the curated knowledge store under `.cursor/`.
+- FSC is organized by the directories defined above and indexed via shallow `index.mdc` files.
+
+## File extension policy
+- Use `.mdc` for Cursor rules or when frontmatter metadata is required.
+- Use `.md` for general notes and documents (better tool compatibility).

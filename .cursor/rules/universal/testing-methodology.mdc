@@ -1,0 +1,24 @@
+---
+description: Testing methodology — coverage matrix, ROGYB cycle, security-as-test
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Testing Methodology
+
+## Coverage matrix
+
+| Layer | Scope | Examples |
+|-------|-------|----------|
+| **Unit** | Function-level branches and edge cases | Extractors, severity classification, report formatting |
+| **Integration** | Cross-boundary interactions | govulncheck execution, Origami graph walk |
+| **E2E** | Full pipeline validation | Repo path → scan → classify → assess → report |
+| **Security** | Trust boundaries and external data | Command injection via repo path, OWASP checklist |
+
+## Development cycle: Red-Orange-Green-Yellow-Blue
+
+1. **Red** — write a failing test.
+2. **Orange** — instrument problem signals (errors, anomalies).
+3. **Green** — implement; make test pass.
+4. **Yellow** — instrument success signals (decisions, metrics).
+5. **Blue** — refactor; tune log levels.

@@ -1,0 +1,7 @@
+# Index
+
+## Directories
+- `domain/` — Achilles-specific rules (project standards, domain protocols)
+- `universal/` — generic IT engineering rules (testing, security, conventions)
+
+## Files

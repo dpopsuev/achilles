@@ -1,0 +1,17 @@
+---
+description: Go test conventions — stdlib testing; naming and fixture management
+alwaysApply: false
+globs: "**/*.go"
+---
+
+# Go Test Conventions
+
+Achilles uses standard library `testing` for all tests.
+
+## Conventions
+
+- **Naming:** `Test<Unit>_<Scenario>` (e.g., `TestClassifyExtractor_ZeroFindings`).
+- **Helpers:** Use `t.Helper()` in helper functions.
+- **Assertions:** `t.Errorf` / `t.Fatalf` with clear `got` / `want` messages.
+- **Table-driven:** Prefer `t.Run(tt.name, ...)` for parameterized inputs.
+- **Temp dirs:** Use `t.TempDir()` for temporary state.

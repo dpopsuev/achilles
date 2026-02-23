@@ -1,0 +1,7 @@
+# Index
+
+## Directories
+- `bootstrap/` — create/verify .cursor structure (project-agnostic)
+- `index-integrity/` — scan, validate, and enforce index.mdc compliance across .cursor/
+
+## Files
