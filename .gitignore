@@ -1,0 +1,33 @@
+# Binary output
+/achilles
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go
+*.test
+*.out
+go.work
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Cursor local MCP config
+.cursor/mcp.json
+
+# Personal developer preferences
+.cursor/personal/
+
+# Sensitive infrastructure details
+.cursor/sensitive/
+
+# Env and secrets
+.env
+.env.local
+*.pem
