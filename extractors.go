@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	fw "github.com/dpopsuev/origami"
 )
 
 // GovulncheckExtractor parses govulncheck -json streaming output into
@@ -208,12 +206,4 @@ func inferSeverity(osv OSVEntry, fe FindingEntry) Severity {
 	default:
 		return SeverityLow
 	}
-}
-
-// RegisterExtractors builds and returns an ExtractorRegistry with all achilles extractors.
-func RegisterExtractors() fw.ExtractorRegistry {
-	reg := make(fw.ExtractorRegistry)
-	reg.Register(&GovulncheckExtractor{})
-	reg.Register(&ClassifyExtractor{})
-	return reg
 }

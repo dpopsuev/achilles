@@ -27,7 +27,6 @@ alwaysApply: true
 - `types.go` — Domain types (Severity, ScanResult, Assessment, Finding).
 - `extractors.go` — `GovulncheckExtractor`, `ClassifyExtractor` implementing `framework.Extractor`.
 - `nodes.go` — Pipeline nodes (scan, classify, assess, report) implementing `framework.Node`.
-- `edges.go` — Edge evaluation logic implementing `framework.Edge`.
 - `pipelines/achilles.yaml` — Pipeline DSL definition.
 
 ## Scope

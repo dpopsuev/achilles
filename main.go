@@ -1,7 +1,7 @@
 // Achilles — Go vulnerability scanner built on the Origami agentic pipeline framework.
 //
 // Second reference implementation proving Origami works for any domain.
-// Zero imports from internal/ (Asterisk domain). Uses only pkg/framework/ and stdlib.
+// Zero Asterisk-domain imports. Uses only github.com/dpopsuev/origami and stdlib.
 //
 // Run it:
 //
