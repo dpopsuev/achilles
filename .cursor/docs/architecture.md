@@ -59,7 +59,7 @@ Achilles imports **only** Origami and Cobra. Zero imports from Asterisk or any o
 
 ## What Achilles does NOT use (yet)
 
-Adversarial Dialectic, Masks, Team Walk, Cycles, Metacalibration — available via Origami but not needed for the current pipeline.
+Adversarial Dialectic, Masks, Team Walk, Cycles, Ouroboros (metacalibration) — available via Origami but not needed for the current pipeline.
 
 ## For deeper framework concepts
 

@@ -32,4 +32,4 @@ alwaysApply: true
 ## Scope
 
 - Achilles is the second Origami reference implementation, proving the framework works for any domain.
-- Advanced Origami features (Adversarial Dialectic, Masks, Team Walk, Metacal) are available but not yet used.
+- Advanced Origami features (Adversarial Dialectic, Masks, Team Walk, Ouroboros) are available but not yet used.
