@@ -8,6 +8,7 @@
 //	go run . scan .
 //	go run . scan /path/to/any/go/repo
 //	go run . render
+//	go run . validate
 package main
 
 import (
@@ -47,11 +48,22 @@ elements, and extractors that power Asterisk's root cause analysis engine.`,
 		RunE:  runRender,
 	}
 
-	root.AddCommand(scanCmd, renderCmd)
+	validateCmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Validate the pipeline YAML without executing",
+		RunE:  runValidate,
+	}
+
+	root.AddCommand(scanCmd, renderCmd, validateCmd)
 
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func pipelinePath() string {
+	_, thisFile, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(thisFile), "pipelines", "achilles.yaml")
 }
 
 func runScan(_ *cobra.Command, args []string) error {
@@ -67,19 +79,6 @@ func runScan(_ *cobra.Command, args []string) error {
 
 	if _, err := os.Stat(filepath.Join(abs, "go.mod")); err != nil {
 		return fmt.Errorf("%s does not contain a go.mod file", abs)
-	}
-
-	pipelineDef, err := loadPipeline()
-	if err != nil {
-		return err
-	}
-
-	nodeReg := NodeRegistry(abs)
-	edgeReg := EdgeFactory()
-
-	graph, err := pipelineDef.BuildGraph(nodeReg, edgeReg)
-	if err != nil {
-		return fmt.Errorf("build graph: %w", err)
 	}
 
 	persona, _ := fw.PersonaByName("Herald")
@@ -109,70 +108,49 @@ func runScan(_ *cobra.Command, args []string) error {
 		}
 	})
 
-	graph, err = fw.NewGraph(
-		graph.Name(),
-		graph.Nodes(),
-		graph.Edges(),
-		graph.Zones(),
-		fw.WithDoneNode(pipelineDef.Done),
-		fw.WithObserver(observer),
-	)
-	if err != nil {
-		return fmt.Errorf("rebuild graph with observer: %w", err)
-	}
-
 	fmt.Printf("\n%s%s=== Achilles — Origami Pipeline ===%s\n\n", bold, cyan, reset)
 	fmt.Printf("  Repository: %s%s%s\n", bold, abs, reset)
-	fmt.Printf("  Pipeline:   %s (4 nodes, 6 edges)\n", pipelineDef.Pipeline)
+	fmt.Printf("  Pipeline:   achilles (4 nodes, 6 edges)\n")
 	fmt.Printf("  Walker:     %s (element=%s)\n\n", persona.Identity.PersonaName, persona.Identity.Element)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	err = graph.Walk(ctx, walker, pipelineDef.Start)
+	err = fw.Run(ctx, pipelinePath(), nil,
+		fw.WithNodes(NodeRegistry(abs)),
+		fw.WithWalker(walker),
+		fw.WithRunObserver(observer),
+	)
 	if err != nil {
-		return fmt.Errorf("pipeline walk: %w", err)
+		return fmt.Errorf("pipeline: %w", err)
 	}
 
-	// The report is the last artifact produced.
-	if len(walker.state.History) > 0 {
-		lastCtx := walker.state.Context
-		if report, ok := lastCtx["report"]; ok {
-			fmt.Print(report)
-		}
+	if report, ok := walker.state.Context["report"]; ok {
+		fmt.Print(report)
 	}
 
 	return nil
 }
 
 func runRender(_ *cobra.Command, _ []string) error {
-	def, err := loadPipeline()
+	data, err := os.ReadFile(pipelinePath())
 	if err != nil {
-		return err
+		return fmt.Errorf("read pipeline: %w", err)
+	}
+	def, err := fw.LoadPipeline(data)
+	if err != nil {
+		return fmt.Errorf("parse pipeline: %w", err)
 	}
 	fmt.Println(fw.Render(def))
 	return nil
 }
 
-func loadPipeline() (*fw.PipelineDef, error) {
-	_, thisFile, _, _ := runtime.Caller(0)
-	yamlPath := filepath.Join(filepath.Dir(thisFile), "pipelines", "achilles.yaml")
-
-	data, err := os.ReadFile(yamlPath)
-	if err != nil {
-		return nil, fmt.Errorf("read pipeline YAML: %w", err)
+func runValidate(_ *cobra.Command, _ []string) error {
+	if err := fw.Validate(pipelinePath(), fw.WithNodes(NodeRegistry("."))); err != nil {
+		return err
 	}
-
-	def, err := fw.LoadPipeline(data)
-	if err != nil {
-		return nil, fmt.Errorf("parse pipeline: %w", err)
-	}
-
-	if err := def.Validate(); err != nil {
-		return nil, fmt.Errorf("validate pipeline: %w", err)
-	}
-
-	return def, nil
+	fmt.Println("OK: pipeline is valid")
+	return nil
 }
 
 // achillesWalker implements framework.Walker for the vulnerability scan pipeline.
@@ -190,7 +168,6 @@ func (w *achillesWalker) Handle(ctx context.Context, node fw.Node, nc fw.NodeCon
 		return nil, err
 	}
 
-	// Stash the report text in walker context for final output.
 	if node.Name() == "report" {
 		if ra, ok := artifact.Raw().(string); ok {
 			w.state.Context["report"] = ra
