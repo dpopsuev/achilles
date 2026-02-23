@@ -1,6 +1,7 @@
 # Achilles — Go vulnerability scanner pipeline.
 # Second Origami reference implementation — proves the framework works for any domain.
 # Imports zero Asterisk domain code. Uses the same DSL, graph walk, extractors, and elements.
+# Edge routing uses when: expressions evaluated by expr-lang/expr.
 pipeline: achilles
 description: "Achilles: scan a Go repository for known vulnerabilities, classify by severity, and produce a security assessment."
 
@@ -37,39 +38,39 @@ edges:
     name: findings-ready
     from: scan
     to: classify
-    condition: "govulncheck produced output"
+    when: 'len(output.Findings) > 0'
 
   - id: V2
     name: no-findings
     from: scan
     to: report
     shortcut: true
-    condition: "zero vulnerabilities found"
+    when: 'len(output.Findings) == 0'
 
   - id: V3
     name: classified
     from: classify
     to: assess
-    condition: "vulnerabilities grouped by severity"
+    when: 'true'
 
   - id: V4
-    name: critical-found
+    name: assessment-complete
     from: assess
     to: report
-    condition: "risk score computed"
+    when: 'true'
 
   - id: V5
     name: rescan
     from: assess
     to: scan
     loop: true
-    condition: "transitive deps need deeper scan AND loops < max_loops"
+    when: 'false'
 
   - id: V6
     name: done
     from: report
     to: _done
-    condition: "always (terminal)"
+    when: 'true'
 
 start: scan
 done: _done
