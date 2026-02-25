@@ -13,16 +13,23 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	fw "github.com/dpopsuev/origami"
 
 	"github.com/spf13/cobra"
 )
+
+//go:embed pipelines/achilles.yaml
+var pipelineYAML []byte
+
+func init() {
+	fw.RegisterEmbeddedPipeline("achilles", pipelineYAML)
+}
 
 func main() {
 	root := &cobra.Command{
@@ -61,9 +68,16 @@ elements, and extractors that power Asterisk's root cause analysis engine.`,
 	}
 }
 
-func pipelinePath() string {
-	_, thisFile, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(thisFile), "pipelines", "achilles.yaml")
+func resolvePipeline() (*fw.PipelineDef, error) {
+	data, err := fw.ResolvePipelinePath("achilles")
+	if err != nil {
+		return nil, fmt.Errorf("resolve pipeline: %w", err)
+	}
+	def, err := fw.LoadPipeline(data)
+	if err != nil {
+		return nil, fmt.Errorf("parse pipeline: %w", err)
+	}
+	return def, nil
 }
 
 func runScan(_ *cobra.Command, args []string) error {
@@ -81,26 +95,23 @@ func runScan(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("%s does not contain a go.mod file", abs)
 	}
 
-	persona, _ := fw.PersonaByName("Herald")
-	walker := &achillesWalker{
-		identity: persona.Identity,
-		state:    fw.NewWalkerState("achilles-1"),
-	}
+	walker := fw.DefaultWalker()
+	capture := fw.NewOutputCapture()
 
 	observer := fw.WalkObserverFunc(func(e fw.WalkEvent) {
 		switch e.Type {
 		case fw.EventNodeEnter:
 			fmt.Printf("  %s[%s]%s entering %s%s%s...\n",
-				dim, walker.identity.PersonaName, reset,
+				dim, walker.Identity().PersonaName, reset,
 				bold, e.Node, reset)
 		case fw.EventNodeExit:
 			if e.Error != nil {
 				fmt.Printf("  %s[%s]%s %s%s failed: %v%s\n",
-					dim, walker.identity.PersonaName, reset,
+					dim, walker.Identity().PersonaName, reset,
 					red, e.Node, e.Error, reset)
 			} else {
 				fmt.Printf("  %s[%s]%s %s%s%s complete (%s)\n",
-					dim, walker.identity.PersonaName, reset,
+					dim, walker.Identity().PersonaName, reset,
 					green, e.Node, reset, e.Elapsed)
 			}
 		case fw.EventTransition:
@@ -111,68 +122,59 @@ func runScan(_ *cobra.Command, args []string) error {
 	fmt.Printf("\n%s%s=== Achilles — Origami Pipeline ===%s\n\n", bold, cyan, reset)
 	fmt.Printf("  Repository: %s%s%s\n", bold, abs, reset)
 	fmt.Printf("  Pipeline:   achilles (4 nodes, 6 edges)\n")
-	fmt.Printf("  Walker:     %s (element=%s)\n\n", persona.Identity.PersonaName, persona.Identity.Element)
+	fmt.Printf("  Walker:     %s (element=%s)\n\n",
+		walker.Identity().PersonaName, walker.Identity().Element)
+
+	def, err := resolvePipeline()
+	if err != nil {
+		return err
+	}
+
+	reg := fw.GraphRegistries{Nodes: NodeRegistry(abs)}
+	runner, err := fw.NewRunnerWith(def, reg)
+	if err != nil {
+		return fmt.Errorf("build runner: %w", err)
+	}
+
+	runner.Graph.(*fw.DefaultGraph).SetObserver(fw.MultiObserver{observer, capture})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	err = fw.Run(ctx, pipelinePath(), nil,
-		fw.WithNodes(NodeRegistry(abs)),
-		fw.WithWalker(walker),
-		fw.WithRunObserver(observer),
-	)
-	if err != nil {
+	if err := runner.Walk(ctx, walker, def.Start); err != nil {
 		return fmt.Errorf("pipeline: %w", err)
 	}
 
-	if report, ok := walker.state.Context["report"]; ok {
-		fmt.Print(report)
+	if report, ok := capture.ArtifactAt("report"); ok {
+		if text, ok := report.Raw().(string); ok {
+			fmt.Print(text)
+		}
 	}
 
 	return nil
 }
 
 func runRender(_ *cobra.Command, _ []string) error {
-	data, err := os.ReadFile(pipelinePath())
+	def, err := resolvePipeline()
 	if err != nil {
-		return fmt.Errorf("read pipeline: %w", err)
-	}
-	def, err := fw.LoadPipeline(data)
-	if err != nil {
-		return fmt.Errorf("parse pipeline: %w", err)
+		return err
 	}
 	fmt.Println(fw.Render(def))
 	return nil
 }
 
 func runValidate(_ *cobra.Command, _ []string) error {
-	if err := fw.Validate(pipelinePath(), fw.WithNodes(NodeRegistry("."))); err != nil {
+	def, err := resolvePipeline()
+	if err != nil {
 		return err
+	}
+	if err := def.Validate(); err != nil {
+		return fmt.Errorf("validate: %w", err)
+	}
+	reg := fw.GraphRegistries{Nodes: NodeRegistry(".")}
+	if _, err := def.BuildGraphWith(reg); err != nil {
+		return fmt.Errorf("build graph (dry run): %w", err)
 	}
 	fmt.Println("OK: pipeline is valid")
 	return nil
-}
-
-// achillesWalker implements framework.Walker for the vulnerability scan pipeline.
-type achillesWalker struct {
-	identity fw.AgentIdentity
-	state    *fw.WalkerState
-}
-
-func (w *achillesWalker) Identity() fw.AgentIdentity { return w.identity }
-func (w *achillesWalker) State() *fw.WalkerState     { return w.state }
-
-func (w *achillesWalker) Handle(ctx context.Context, node fw.Node, nc fw.NodeContext) (fw.Artifact, error) {
-	artifact, err := node.Process(ctx, nc)
-	if err != nil {
-		return nil, err
-	}
-
-	if node.Name() == "report" {
-		if ra, ok := artifact.Raw().(string); ok {
-			w.state.Context["report"] = ra
-		}
-	}
-
-	return artifact, nil
 }
