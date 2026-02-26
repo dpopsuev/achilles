@@ -172,7 +172,7 @@ func runValidate(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("validate: %w", err)
 	}
 	reg := fw.GraphRegistries{Nodes: NodeRegistry(".")}
-	if _, err := def.BuildGraphWith(reg); err != nil {
+	if _, err := def.BuildGraph(reg); err != nil {
 		return fmt.Errorf("build graph (dry run): %w", err)
 	}
 	fmt.Println("OK: pipeline is valid")
