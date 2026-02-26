@@ -5,10 +5,10 @@
 //
 // Run it:
 //
-//	go run . scan .
-//	go run . scan /path/to/any/go/repo
-//	go run . render
-//	go run . validate
+//	go run . analyze .
+//	go run . analyze /path/to/any/go/repo
+//	go run . pipeline render pipelines/achilles.yaml
+//	go run . pipeline validate pipelines/achilles.yaml
 package main
 
 import (
@@ -20,8 +20,7 @@ import (
 	"time"
 
 	fw "github.com/dpopsuev/origami"
-
-	"github.com/spf13/cobra"
+	origamicli "github.com/dpopsuev/origami/cli"
 )
 
 //go:embed pipelines/achilles.yaml
@@ -32,38 +31,23 @@ func init() {
 }
 
 func main() {
-	root := &cobra.Command{
-		Use:   "achilles",
-		Short: "Go vulnerability scanner — powered by Origami",
-		Long: `Achilles scans Go repositories for known vulnerabilities using govulncheck,
+	c, err := origamicli.NewCLI("achilles", "Go vulnerability scanner — powered by Origami").
+		WithAnalyze(runScan).
+		WithPipeline("pipelines/achilles.yaml").
+		Build()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "build CLI: %v\n", err)
+		os.Exit(1)
+	}
+
+	root := c.Root()
+	root.Long = `Achilles scans Go repositories for known vulnerabilities using govulncheck,
 classifies findings by severity, and produces a security assessment.
 
 Built on the Origami agentic pipeline framework — the same DSL, graph walk,
-elements, and extractors that power Asterisk's root cause analysis engine.`,
-	}
+elements, and extractors that power Asterisk's root cause analysis engine.`
 
-	scanCmd := &cobra.Command{
-		Use:   "scan [repo-path]",
-		Short: "Scan a Go repository for vulnerabilities",
-		Args:  cobra.MaximumNArgs(1),
-		RunE:  runScan,
-	}
-
-	renderCmd := &cobra.Command{
-		Use:   "render",
-		Short: "Render the achilles pipeline as a Mermaid diagram",
-		RunE:  runRender,
-	}
-
-	validateCmd := &cobra.Command{
-		Use:   "validate",
-		Short: "Validate the pipeline YAML without executing",
-		RunE:  runValidate,
-	}
-
-	root.AddCommand(scanCmd, renderCmd, validateCmd)
-
-	if err := root.Execute(); err != nil {
+	if err := c.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -80,7 +64,7 @@ func resolvePipeline() (*fw.PipelineDef, error) {
 	return def, nil
 }
 
-func runScan(_ *cobra.Command, args []string) error {
+func runScan(ctx context.Context, args []string) error {
 	repoPath := "."
 	if len(args) > 0 {
 		repoPath = args[0]
@@ -138,7 +122,7 @@ func runScan(_ *cobra.Command, args []string) error {
 
 	runner.Graph.(*fw.DefaultGraph).SetObserver(fw.MultiObserver{observer, capture})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
 	if err := runner.Walk(ctx, walker, def.Start); err != nil {
@@ -151,30 +135,5 @@ func runScan(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	return nil
-}
-
-func runRender(_ *cobra.Command, _ []string) error {
-	def, err := resolvePipeline()
-	if err != nil {
-		return err
-	}
-	fmt.Println(fw.Render(def))
-	return nil
-}
-
-func runValidate(_ *cobra.Command, _ []string) error {
-	def, err := resolvePipeline()
-	if err != nil {
-		return err
-	}
-	if err := def.Validate(); err != nil {
-		return fmt.Errorf("validate: %w", err)
-	}
-	reg := fw.GraphRegistries{Nodes: NodeRegistry(".")}
-	if _, err := def.BuildGraph(reg); err != nil {
-		return fmt.Errorf("build graph (dry run): %w", err)
-	}
-	fmt.Println("OK: pipeline is valid")
 	return nil
 }
