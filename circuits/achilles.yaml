@@ -1,8 +1,8 @@
-# Achilles — Go vulnerability scanner pipeline.
+# Achilles — Go vulnerability scanner circuit.
 # Second Origami reference implementation — proves the framework works for any domain.
 # Imports zero Asterisk domain code. Uses the same DSL, graph walk, extractors, and elements.
 # Edge routing uses when: expressions evaluated by expr-lang/expr.
-pipeline: achilles
+circuit: achilles
 description: "Achilles: scan a Go repository for known vulnerabilities, classify by severity, and produce a security assessment."
 
 zones:

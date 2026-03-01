@@ -8,9 +8,9 @@ alwaysApply: true
 ## Product definition
 
 - Achilles is an **AI-driven vulnerability discovery tool** (`github.com/dpopsuev/achilles`) that goes beyond known-CVE detection to find *novel* vulnerabilities through meta-pattern recognition.
-- Built entirely on the Origami agentic pipeline framework (`github.com/dpopsuev/origami`).
+- Built entirely on the Origami agentic circuit framework (`github.com/dpopsuev/origami`).
 - **Two-layer approach:** (1) Baseline — detect known vulnerabilities using existing scanners (`govulncheck`, etc.). (2) Discovery — use agentic AI to recognize meta-patterns across codebases, dependencies, and historical vulnerability data that signal novel, undiscovered vulnerabilities.
-- Pipeline: 4-node graph (scan → classify → assess → report) with shortcut edges for clean repos.
+- Circuit: 4-node graph (scan → classify → assess → report) with shortcut edges for clean repos.
 - Scanner backends are pluggable; `govulncheck` is the first implementation.
 - **Initial targets:** Red Hat's core products — RHEL and OCP — for dataset creation, calibration, and wet runs.
 
@@ -26,8 +26,8 @@ alwaysApply: true
 - `main.go` — CLI entry point (Cobra), node/edge/extractor registration, graph walk.
 - `types.go` — Domain types (Severity, ScanResult, Assessment, Finding).
 - `extractors.go` — `GovulncheckExtractor`, `ClassifyExtractor` implementing `framework.Extractor`.
-- `nodes.go` — Pipeline nodes (scan, classify, assess, report) implementing `framework.Node`.
-- `pipelines/achilles.yaml` — Pipeline DSL definition.
+- `nodes.go` — Circuit nodes (scan, classify, assess, report) implementing `framework.Node`.
+- `circuits/achilles.yaml` — Circuit DSL definition.
 
 ## Scope
 

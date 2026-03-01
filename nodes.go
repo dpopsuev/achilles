@@ -346,7 +346,7 @@ func riskColor(score float64) string {
 	}
 }
 
-// NodeRegistry builds the framework NodeRegistry for the achilles pipeline.
+// NodeRegistry builds the framework NodeRegistry for the achilles circuit.
 func NodeRegistry(repoPath string) fw.NodeRegistry {
 	govulnExt := &GovulncheckExtractor{}
 	classifyExt := &ClassifyExtractor{}

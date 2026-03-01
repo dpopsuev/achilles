@@ -1,4 +1,4 @@
-// Achilles — Go vulnerability scanner built on the Origami agentic pipeline framework.
+// Achilles — Go vulnerability scanner built on the Origami agentic circuit framework.
 //
 // Second reference implementation proving Origami works for any domain.
 // Zero Asterisk-domain imports. Uses only github.com/dpopsuev/origami and stdlib.
@@ -7,8 +7,8 @@
 //
 //	go run . analyze .
 //	go run . analyze /path/to/any/go/repo
-//	go run . pipeline render pipelines/achilles.yaml
-//	go run . pipeline validate pipelines/achilles.yaml
+//	go run . circuit render circuits/achilles.yaml
+//	go run . circuit validate circuits/achilles.yaml
 package main
 
 import (
@@ -23,17 +23,17 @@ import (
 	origamicli "github.com/dpopsuev/origami/cli"
 )
 
-//go:embed pipelines/achilles.yaml
-var pipelineYAML []byte
+//go:embed circuits/achilles.yaml
+var circuitYAML []byte
 
 func init() {
-	fw.RegisterEmbeddedPipeline("achilles", pipelineYAML)
+	fw.RegisterEmbeddedCircuit("achilles", circuitYAML)
 }
 
 func main() {
 	c, err := origamicli.NewCLI("achilles", "Go vulnerability scanner — powered by Origami").
 		WithAnalyze(runScan).
-		WithPipeline("pipelines/achilles.yaml").
+		WithCircuit("circuits/achilles.yaml").
 		Build()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "build CLI: %v\n", err)
@@ -44,7 +44,7 @@ func main() {
 	root.Long = `Achilles scans Go repositories for known vulnerabilities using govulncheck,
 classifies findings by severity, and produces a security assessment.
 
-Built on the Origami agentic pipeline framework — the same DSL, graph walk,
+Built on the Origami agentic circuit framework — the same DSL, graph walk,
 elements, and extractors that power Asterisk's root cause analysis engine.`
 
 	if err := c.Execute(); err != nil {
@@ -52,14 +52,14 @@ elements, and extractors that power Asterisk's root cause analysis engine.`
 	}
 }
 
-func resolvePipeline() (*fw.PipelineDef, error) {
-	data, err := fw.ResolvePipelinePath("achilles")
+func resolveCircuit() (*fw.CircuitDef, error) {
+	data, err := fw.ResolveCircuitPath("achilles")
 	if err != nil {
-		return nil, fmt.Errorf("resolve pipeline: %w", err)
+		return nil, fmt.Errorf("resolve circuit: %w", err)
 	}
-	def, err := fw.LoadPipeline(data)
+	def, err := fw.LoadCircuit(data)
 	if err != nil {
-		return nil, fmt.Errorf("parse pipeline: %w", err)
+		return nil, fmt.Errorf("parse circuit: %w", err)
 	}
 	return def, nil
 }
@@ -103,13 +103,13 @@ func runScan(ctx context.Context, args []string) error {
 		}
 	})
 
-	fmt.Printf("\n%s%s=== Achilles — Origami Pipeline ===%s\n\n", bold, cyan, reset)
+	fmt.Printf("\n%s%s=== Achilles — Origami Circuit ===%s\n\n", bold, cyan, reset)
 	fmt.Printf("  Repository: %s%s%s\n", bold, abs, reset)
-	fmt.Printf("  Pipeline:   achilles (4 nodes, 6 edges)\n")
+	fmt.Printf("  Circuit:   achilles (4 nodes, 6 edges)\n")
 	fmt.Printf("  Walker:     %s (element=%s)\n\n",
 		walker.Identity().PersonaName, walker.Identity().Element)
 
-	def, err := resolvePipeline()
+	def, err := resolveCircuit()
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func runScan(ctx context.Context, args []string) error {
 	defer cancel()
 
 	if err := runner.Walk(ctx, walker, def.Start); err != nil {
-		return fmt.Errorf("pipeline: %w", err)
+		return fmt.Errorf("circuit: %w", err)
 	}
 
 	if report, ok := capture.ArtifactAt("report"); ok {

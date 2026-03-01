@@ -4,8 +4,8 @@ description: Shared domain definitions for Achilles
 
 # Glossary
 
-- **Achilles** — AI-driven vulnerability discovery tool built on the Origami agentic pipeline framework. Goes beyond detecting known CVEs: uses meta-pattern recognition across codebases, dependencies, and historical vulnerability data to surface *novel* vulnerabilities that scanners like `govulncheck` cannot find. Known-vulnerability detection is the baseline; pattern-based discovery of unknowns is the mission. Initial dataset, calibration, and wet-run targets: Red Hat's core products (RHEL, OCP). `github.com/dpopsuev/achilles`.
-- **Origami** — The agentic pipeline framework that Achilles is built on. Provides Node, Edge, Graph, Walker, DSL, Extractors, Elements. `github.com/dpopsuev/origami`.
+- **Achilles** — AI-driven vulnerability discovery tool built on the Origami agentic circuit framework. Goes beyond detecting known CVEs: uses meta-pattern recognition across codebases, dependencies, and historical vulnerability data to surface *novel* vulnerabilities that scanners like `govulncheck` cannot find. Known-vulnerability detection is the baseline; pattern-based discovery of unknowns is the mission. Initial dataset, calibration, and wet-run targets: Red Hat's core products (RHEL, OCP). `github.com/dpopsuev/achilles`.
+- **Origami** — The agentic circuit framework that Achilles is built on. Provides Node, Edge, Graph, Walker, DSL, Extractors, Elements. `github.com/dpopsuev/origami`.
 - **govulncheck** — Go's official vulnerability scanner (`golang.org/x/vuln/cmd/govulncheck`). Achilles runs it as a subprocess and parses its JSON output.
 - **ScanResult** — Output of the `scan` node. Contains parsed `govulncheck` findings, SBOM module list, and metadata.
 - **Finding** — A single vulnerability finding with module, package, function, and severity.

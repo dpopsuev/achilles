@@ -137,7 +137,7 @@ type Finding struct {
 	CallSite     string
 }
 
-// Assessment is the final output of the achilles pipeline.
+// Assessment is the final output of the achilles circuit.
 type Assessment struct {
 	RepoPath       string
 	ScanTime       time.Time

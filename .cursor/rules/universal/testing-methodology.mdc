@@ -12,7 +12,7 @@ alwaysApply: false
 |-------|-------|----------|
 | **Unit** | Function-level branches and edge cases | Extractors, severity classification, report formatting |
 | **Integration** | Cross-boundary interactions | govulncheck execution, Origami graph walk |
-| **E2E** | Full pipeline validation | Repo path → scan → classify → assess → report |
+| **E2E** | Full circuit validation | Repo path → scan → classify → assess → report |
 | **Security** | Trust boundaries and external data | Command injection via repo path, OWASP checklist |
 
 ## Development cycle: Red-Orange-Green-Yellow-Blue
