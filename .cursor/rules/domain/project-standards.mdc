@@ -1,5 +1,5 @@
 ---
-description: Project standards for Achilles — generic vulnerability scanning tool on the Origami framework
+description: Project standards for Achilles — AI-driven trust-boundary vulnerability discovery on the Origami framework
 alwaysApply: true
 ---
 
@@ -7,12 +7,14 @@ alwaysApply: true
 
 ## Product definition
 
-- Achilles is an **AI-driven vulnerability discovery tool** (`github.com/dpopsuev/achilles`) that goes beyond known-CVE detection to find *novel* vulnerabilities through meta-pattern recognition.
+- Achilles is an **AI-driven trust-boundary vulnerability discovery tool** (`github.com/dpopsuev/achilles`) that learns from historical CVE data to detect vulnerability patterns in new code.
 - Built entirely on the Origami agentic circuit framework (`github.com/dpopsuev/origami`).
-- **Two-layer approach:** (1) Baseline — detect known vulnerabilities using existing scanners (`govulncheck`, etc.). (2) Discovery — use agentic AI to recognize meta-patterns across codebases, dependencies, and historical vulnerability data that signal novel, undiscovered vulnerabilities.
-- Circuit: 4-node graph (scan → classify → assess → report) with shortcut edges for clean repos.
-- Scanner backends are pluggable; `govulncheck` is the first implementation.
+- **Core approach:** (1) Build datasets from known CVEs in major projects (Linux kernel, RHEL, OCP). (2) Learn the trust-boundary patterns — code shapes, API misuse, boundary crossings — that historically led to vulnerabilities. (3) Detect those patterns in target codebases before they become CVEs.
 - **Initial targets:** Red Hat's core products — RHEL and OCP — for dataset creation, calibration, and wet runs.
+
+## Current state (PoC scaffolding)
+
+The codebase currently implements a `govulncheck` wrapper (scan → classify → assess → report) as proof that Origami works for a second domain. This is scaffolding, not the product. The real circuit will emerge as the dataset and pattern-recognition layers are built.
 
 ## Development methodology
 
