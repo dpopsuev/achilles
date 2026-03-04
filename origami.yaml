@@ -1,3 +1,6 @@
 name: achilles
 description: AI-driven vulnerability discovery via meta-pattern recognition
 version: "1.0"
+
+circuits:
+  achilles: circuits/achilles.yaml
