@@ -8,29 +8,29 @@ description: "Achilles: scan a Go repository for known vulnerabilities, classify
 zones:
   discovery:
     nodes: [scan]
-    element: earth
+    approach: methodical
     stickiness: 0
   analysis:
     nodes: [classify, assess]
-    element: fire
+    approach: rapid
     stickiness: 1
   output:
     nodes: [report]
-    element: air
+    approach: holistic
     stickiness: 0
 
 nodes:
   - name: scan
-    element: earth
+    approach: methodical
     family: scan
   - name: classify
-    element: fire
+    approach: rapid
     family: classify
   - name: assess
-    element: diamond
+    approach: rigorous
     family: assess
   - name: report
-    element: air
+    approach: holistic
     family: report
 
 edges:
