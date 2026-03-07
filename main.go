@@ -21,6 +21,7 @@ import (
 
 	fw "github.com/dpopsuev/origami"
 	origamicli "github.com/dpopsuev/origami/cli"
+	_ "github.com/dpopsuev/origami/persona"
 )
 
 //go:embed circuits/achilles.yaml
@@ -80,7 +81,7 @@ func runScan(ctx context.Context, args []string) error {
 	}
 
 	walker := fw.DefaultWalker()
-	capture := fw.NewOutputCapture()
+	obs, capture := fw.NewCapture()
 
 	observer := fw.WalkObserverFunc(func(e fw.WalkEvent) {
 		switch e.Type {
@@ -114,13 +115,13 @@ func runScan(ctx context.Context, args []string) error {
 		return err
 	}
 
-	reg := fw.GraphRegistries{Nodes: NodeRegistry(abs)}
+	reg := fw.GraphRegistries{Nodes: NodeRegistry(abs, def)}
 	runner, err := fw.NewRunnerWith(def, reg)
 	if err != nil {
 		return fmt.Errorf("build runner: %w", err)
 	}
 
-	runner.Graph.(*fw.DefaultGraph).SetObserver(fw.MultiObserver{observer, capture})
+	runner.Graph.(*fw.DefaultGraph).SetObserver(fw.MultiObserver{observer, obs})
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()

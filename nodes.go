@@ -10,6 +10,7 @@ import (
 	"time"
 
 	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/schematics/toolkit"
 )
 
 // --- Artifacts ---
@@ -267,18 +268,21 @@ func severityColor(s Severity) string {
 
 func formatReport(a *Assessment) string {
 	var b strings.Builder
+	n := len(a.Findings)
+	vulnWord := toolkit.PluralizeCount(n, "vulnerability", "vulnerabilities")
 
 	b.WriteString(fmt.Sprintf("\n%s%s=== Achilles Security Assessment ===%s\n\n", bold, cyan, reset))
 	b.WriteString(fmt.Sprintf("  Repository:  %s%s%s\n", bold, a.RepoPath, reset))
 	b.WriteString(fmt.Sprintf("  Scan time:   %s\n", a.ScanTime.Format(time.RFC3339)))
 	b.WriteString(fmt.Sprintf("  Risk score:  %s%.2f%s\n", riskColor(a.RiskScore), a.RiskScore, reset))
-	b.WriteString(fmt.Sprintf("  Total vulns: %d\n", len(a.Findings)))
+	b.WriteString(fmt.Sprintf("  Total:       %d %s\n", n, vulnWord))
 
+	bySev := toolkit.GroupByKey(a.Findings, func(f Finding) string { return f.Severity.String() })
 	b.WriteString(fmt.Sprintf("\n%s%s--- Severity Breakdown ---%s\n\n", bold, yellow, reset))
 	for _, sev := range []Severity{SeverityCritical, SeverityHigh, SeverityMedium, SeverityLow} {
-		count := len(a.BySeverity[sev])
-		if count > 0 {
-			b.WriteString(fmt.Sprintf("  %s%-10s%s %d\n", severityColor(sev), sev, reset, count))
+		group := bySev[sev.String()]
+		if len(group) > 0 {
+			b.WriteString(fmt.Sprintf("  %s%-10s%s %d\n", severityColor(sev), sev, reset, len(group)))
 		}
 	}
 
@@ -346,15 +350,49 @@ func riskColor(score float64) string {
 	}
 }
 
-// NodeRegistry builds the framework NodeRegistry for the achilles circuit.
-func NodeRegistry(repoPath string) fw.NodeRegistry {
-	govulnExt := &GovulncheckExtractor{}
-	classifyExt := &ClassifyExtractor{}
+// nodeFactory maps node names to their constructor functions.
+var nodeFactory = map[string]func(repoPath string) fw.Node{
+	"scan": func(repoPath string) fw.Node {
+		return &scanNode{repoPath: repoPath, extractor: &GovulncheckExtractor{}}
+	},
+	"classify": func(_ string) fw.Node {
+		return &classifyNode{extractor: &ClassifyExtractor{}}
+	},
+	"assess": func(repoPath string) fw.Node {
+		return &assessNode{repoPath: repoPath}
+	},
+	"report": func(repoPath string) fw.Node {
+		return &reportNode{repoPath: repoPath}
+	},
+}
 
-	return fw.NodeRegistry{
-		"scan":     func(_ fw.NodeDef) fw.Node { return &scanNode{repoPath: repoPath, extractor: govulnExt} },
-		"classify": func(_ fw.NodeDef) fw.Node { return &classifyNode{extractor: classifyExt} },
-		"assess":   func(_ fw.NodeDef) fw.Node { return &assessNode{repoPath: repoPath} },
-		"report":   func(_ fw.NodeDef) fw.Node { return &reportNode{repoPath: repoPath} },
+// NodeRegistry builds the framework NodeRegistry for the achilles circuit.
+// When a CircuitDef is provided, node names are derived from the circuit
+// definition via toolkit.NodeNamesFromCircuit; otherwise the hardcoded
+// factory map is used as a fallback.
+func NodeRegistry(repoPath string, cd *fw.CircuitDef) fw.NodeRegistry {
+	names := toolkit.NodeNamesFromCircuit(cd)
+	if len(names) == 0 {
+		names = make([]string, 0, len(nodeFactory))
+		for k := range nodeFactory {
+			names = append(names, k)
+		}
 	}
+
+	reg := fw.NodeRegistry{}
+	for _, name := range names {
+		factory, ok := nodeFactory[name]
+		if !ok {
+			continue
+		}
+		fn := factory
+		reg[name] = func(_ fw.NodeDef) fw.Node { return fn(repoPath) }
+	}
+	return reg
+}
+
+// NodeArtifactFilename returns the convention-based artifact filename
+// for an Achilles circuit node (e.g., "scan-result.json").
+func NodeArtifactFilename(nodeName string) string {
+	return toolkit.NodeArtifactFilename(nodeName, nil)
 }
