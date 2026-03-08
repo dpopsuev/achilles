@@ -4,6 +4,7 @@
 # Edge routing uses when: expressions evaluated by expr-lang/expr.
 circuit: achilles
 description: "Achilles: scan a Go repository for known vulnerabilities, classify by severity, and produce a security assessment."
+handler_type: node
 
 zones:
   discovery:
@@ -22,16 +23,16 @@ zones:
 nodes:
   - name: scan
     approach: methodical
-    family: scan
+    handler: scan
   - name: classify
     approach: rapid
-    family: classify
+    handler: classify
   - name: assess
     approach: rigorous
-    family: assess
+    handler: assess
   - name: report
     approach: holistic
-    family: report
+    handler: report
 
 edges:
   - id: V1
