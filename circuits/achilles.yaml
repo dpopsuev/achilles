@@ -70,8 +70,8 @@ edges:
   - id: V6
     name: done
     from: report
-    to: _done
+    to: DONE
     when: 'true'
 
 start: scan
-done: _done
+done: DONE
