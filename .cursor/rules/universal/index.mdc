@@ -1,8 +1,0 @@
-# Index
-
-## Directories
-
-## Files
-- `go-test-conventions.mdc` — Go test conventions (stdlib testing, naming, fixture management)
-- `security-analysis.mdc` — OWASP Top 10 checklist for features and trust-boundary changes
-- `testing-methodology.mdc` — coverage matrix, ROGYB cycle, security-as-test

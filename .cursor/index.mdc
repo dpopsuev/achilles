@@ -1,19 +1,6 @@
 # Index
 
-## Directories
-- `contracts/` — work contracts by lifecycle status (draft, active, completed)
-- `docs/` — deep references and long-form analysis
-- `glossary/` — domain terms and definitions
-- `goals/` — goal checklists and per-goal details
-- `guide/` — software development process guidance
-- `notes/` — short summaries and quick references
-- `prompts/` — prompt templates (file-based)
-- `rules/` — persistent agent constraints and conventions
-- `security-cases/` — security bug post-mortems (RCA, severity, mitigation)
-- `skills/` — project-specific skill definitions
-- `strategy/` — long-term objectives and invariants
-- `tactics/` — situational playbooks ("if X, do Y")
-- `taxonomy/` — naming and classification rules
+Post-migration: rules, docs, contracts, notes, and specs have moved to Scribe (governance) and .lexicon/ (domain rules).
 
 ## Files
-- `meta.mdc` — portable meta-engineering rules and binding structure contract
+- `meta.mdc` -- binding structure contract for the knowledge store

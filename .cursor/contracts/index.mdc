@@ -1,9 +1,0 @@
-# Index
-
-## Directories
-- `active/` — contracts currently being executed
-- `completed/` — finished contracts grouped by phase
-- `draft/` — planned contracts not yet being executed
-
-## Files
-- `_TEMPLATE.md` — contract template (status, goal, tasks, acceptance criteria)
