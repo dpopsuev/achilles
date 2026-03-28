@@ -19,16 +19,16 @@ import (
 	"path/filepath"
 	"time"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	origamicli "github.com/dpopsuev/origami/cli"
-	_ "github.com/dpopsuev/origami/persona"
+	"github.com/dpopsuev/origami/engine"
 )
 
 //go:embed circuits/achilles.yaml
 var circuitYAML []byte
 
 func init() {
-	fw.RegisterEmbeddedCircuit("achilles", circuitYAML)
+	circuit.RegisterEmbeddedCircuit("achilles", circuitYAML)
 }
 
 func main() {
@@ -53,12 +53,12 @@ elements, and extractors that power Asterisk's root cause analysis engine.`
 	}
 }
 
-func resolveCircuit() (*fw.CircuitDef, error) {
-	data, err := fw.ResolveCircuitPath("achilles")
+func resolveCircuit() (*circuit.CircuitDef, error) {
+	data, err := circuit.ResolveCircuitPath("achilles")
 	if err != nil {
 		return nil, fmt.Errorf("resolve circuit: %w", err)
 	}
-	def, err := fw.LoadCircuit(data)
+	def, err := circuit.LoadCircuit(data)
 	if err != nil {
 		return nil, fmt.Errorf("parse circuit: %w", err)
 	}
@@ -80,16 +80,16 @@ func runScan(ctx context.Context, args []string) error {
 		return fmt.Errorf("%s does not contain a go.mod file", abs)
 	}
 
-	walker := fw.DefaultWalker()
-	obs, capture := fw.NewCapture()
+	walker := engine.DefaultWalker()
+	obs, capture := engine.NewCapture()
 
-	observer := fw.WalkObserverFunc(func(e fw.WalkEvent) {
+	observer := circuit.WalkObserverFunc(func(e *circuit.WalkEvent) {
 		switch e.Type {
-		case fw.EventNodeEnter:
+		case circuit.EventNodeEnter:
 			fmt.Printf("  %s[%s]%s entering %s%s%s...\n",
 				dim, walker.Identity().PersonaName, reset,
 				bold, e.Node, reset)
-		case fw.EventNodeExit:
+		case circuit.EventNodeExit:
 			if e.Error != nil {
 				fmt.Printf("  %s[%s]%s %s%s failed: %v%s\n",
 					dim, walker.Identity().PersonaName, reset,
@@ -99,7 +99,7 @@ func runScan(ctx context.Context, args []string) error {
 					dim, walker.Identity().PersonaName, reset,
 					green, e.Node, reset, e.Elapsed)
 			}
-		case fw.EventTransition:
+		case circuit.EventTransition:
 			fmt.Printf("  %s→ %s%s\n", dim, e.Edge, reset)
 		}
 	})
@@ -115,13 +115,13 @@ func runScan(ctx context.Context, args []string) error {
 		return err
 	}
 
-	reg := fw.GraphRegistries{Nodes: NodeRegistry(abs, def)}
-	runner, err := fw.NewRunnerWith(def, reg)
+	reg := &engine.GraphRegistries{Nodes: NodeRegistry(abs, def)}
+	runner, err := engine.NewRunnerWith(def, reg)
 	if err != nil {
 		return fmt.Errorf("build runner: %w", err)
 	}
 
-	runner.Graph.(*fw.DefaultGraph).SetObserver(fw.MultiObserver{observer, obs})
+	runner.Graph.(*engine.DefaultGraph).SetObserver(circuit.MultiObserver{observer, obs})
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()

@@ -1,16 +1,15 @@
 module github.com/dpopsuev/achilles
 
-go 1.24.2
+go 1.25.7
 
-replace github.com/dpopsuev/origami => /home/dpopsuev/Workspace/origami
-
-require github.com/dpopsuev/origami v1.0.0
+require github.com/dpopsuev/origami v0.4.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
+	github.com/dpopsuev/bugle v0.14.0 // indirect
 	github.com/expr-lang/expr v1.17.8 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -38,8 +37,7 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	nhooyr.io/websocket v1.8.17 // indirect
 )

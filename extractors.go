@@ -116,7 +116,7 @@ func classifyFindings(sr *ScanResult) []Finding {
 		}
 	}
 
-	var findings []Finding
+	findings := make([]Finding, 0, len(best))
 	for _, fe := range best {
 		osv := sr.OSVEntries[fe.OSV]
 		f := Finding{
@@ -138,7 +138,7 @@ func classifyFindings(sr *ScanResult) []Finding {
 			}
 		}
 
-		f.Severity = inferSeverity(osv, fe)
+		f.Severity = inferSeverity(&osv, fe)
 		findings = append(findings, f)
 	}
 
@@ -176,7 +176,7 @@ func determineScanLevel(fe FindingEntry) ScanLevel {
 // inferSeverity assigns severity based on summary keywords and call-depth.
 // Symbol-level findings that are actually called are critical/high;
 // module-level findings are lower because the vulnerable code may not be reachable.
-func inferSeverity(osv OSVEntry, fe FindingEntry) Severity {
+func inferSeverity(osv *OSVEntry, fe FindingEntry) Severity {
 	summary := strings.ToLower(osv.Summary)
 	depth := traceDepth(fe)
 

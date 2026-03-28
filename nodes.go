@@ -3,14 +3,24 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"sort"
 	"strings"
 	"time"
 
-	fw "github.com/dpopsuev/origami"
-	"github.com/dpopsuev/origami/schematics/toolkit"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/toolkit"
+)
+
+// Node name constants shared by artifact types and the node factory.
+const (
+	nodeScan     = "scan"
+	nodeClassify = "classify"
+	nodeAssess   = "assess"
+	nodeReport   = "report"
 )
 
 // --- Artifacts ---
@@ -20,7 +30,7 @@ type scanArtifact struct {
 	confidence float64
 }
 
-func (a *scanArtifact) Type() string       { return "scan" }
+func (a *scanArtifact) Type() string       { return nodeScan }
 func (a *scanArtifact) Confidence() float64 { return a.confidence }
 func (a *scanArtifact) Raw() any            { return a.raw }
 
@@ -29,7 +39,7 @@ type classifyArtifact struct {
 	confidence float64
 }
 
-func (a *classifyArtifact) Type() string       { return "classify" }
+func (a *classifyArtifact) Type() string       { return nodeClassify }
 func (a *classifyArtifact) Confidence() float64 { return a.confidence }
 func (a *classifyArtifact) Raw() any            { return a.findings }
 
@@ -38,7 +48,7 @@ type assessArtifact struct {
 	confidence float64
 }
 
-func (a *assessArtifact) Type() string       { return "assess" }
+func (a *assessArtifact) Type() string       { return nodeAssess }
 func (a *assessArtifact) Confidence() float64 { return a.confidence }
 func (a *assessArtifact) Raw() any            { return a.assessment }
 
@@ -47,7 +57,7 @@ type reportArtifact struct {
 	confidence float64
 }
 
-func (a *reportArtifact) Type() string       { return "report" }
+func (a *reportArtifact) Type() string       { return nodeReport }
 func (a *reportArtifact) Confidence() float64 { return a.confidence }
 func (a *reportArtifact) Raw() any            { return a.report }
 
@@ -59,10 +69,10 @@ type scanNode struct {
 	extractor *GovulncheckExtractor
 }
 
-func (n *scanNode) Name() string              { return "scan" }
-func (n *scanNode) ElementAffinity() fw.Element { return fw.ElementEarth }
+func (n *scanNode) Name() string              { return nodeScan }
+func (n *scanNode) ElementAffinity() circuit.Element { return circuit.ElementEarth }
 
-func (n *scanNode) Process(ctx context.Context, _ fw.NodeContext) (fw.Artifact, error) {
+func (n *scanNode) Process(ctx context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	raw, err := runGovulncheck(ctx, n.repoPath)
 	if err != nil {
 		return nil, fmt.Errorf("govulncheck: %w", err)
@@ -93,10 +103,11 @@ func runGovulncheck(ctx context.Context, repoPath string) (string, error) {
 	err := cmd.Run()
 	// govulncheck exits 3 when vulnerabilities are found — that's a success for us.
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 3 {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 3 {
 			return stdout.String(), nil
 		}
-		return "", fmt.Errorf("govulncheck failed (exit %v): %s", err, stderr.String())
+		return "", fmt.Errorf("govulncheck failed (exit %w): %s", err, stderr.String())
 	}
 	return stdout.String(), nil
 }
@@ -106,10 +117,10 @@ type classifyNode struct {
 	extractor *ClassifyExtractor
 }
 
-func (n *classifyNode) Name() string              { return "classify" }
-func (n *classifyNode) ElementAffinity() fw.Element { return fw.ElementFire }
+func (n *classifyNode) Name() string              { return nodeClassify }
+func (n *classifyNode) ElementAffinity() circuit.Element { return circuit.ElementFire }
 
-func (n *classifyNode) Process(ctx context.Context, nc fw.NodeContext) (fw.Artifact, error) {
+func (n *classifyNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("classify: no prior artifact")
 	}
@@ -137,10 +148,10 @@ type assessNode struct {
 	repoPath string
 }
 
-func (n *assessNode) Name() string              { return "assess" }
-func (n *assessNode) ElementAffinity() fw.Element { return fw.ElementDiamond }
+func (n *assessNode) Name() string              { return nodeAssess }
+func (n *assessNode) ElementAffinity() circuit.Element { return circuit.ElementDiamond }
 
-func (n *assessNode) Process(_ context.Context, nc fw.NodeContext) (fw.Artifact, error) {
+func (n *assessNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("assess: no prior artifact")
 	}
@@ -172,15 +183,15 @@ func buildAssessment(repoPath string, findings []Finding) *Assessment {
 		BySeverity: make(map[Severity][]Finding),
 	}
 
-	for _, f := range findings {
-		a.BySeverity[f.Severity] = append(a.BySeverity[f.Severity], f)
+	for i := range findings {
+		a.BySeverity[findings[i].Severity] = append(a.BySeverity[findings[i].Severity], findings[i])
 	}
 
 	// Risk score: weighted by severity and call-depth.
 	var score float64
-	for _, f := range findings {
+	for i := range findings {
 		weight := 0.1
-		switch f.Severity {
+		switch findings[i].Severity {
 		case SeverityCritical:
 			weight = 1.0
 		case SeverityHigh:
@@ -188,7 +199,7 @@ func buildAssessment(repoPath string, findings []Finding) *Assessment {
 		case SeverityMedium:
 			weight = 0.3
 		}
-		if f.ScanLevel == ScanLevelSymbol {
+		if findings[i].ScanLevel == ScanLevelSymbol {
 			weight *= 1.5
 		}
 		score += weight
@@ -200,8 +211,9 @@ func buildAssessment(repoPath string, findings []Finding) *Assessment {
 
 	// Top risks: critical and high-severity findings.
 	for _, sev := range []Severity{SeverityCritical, SeverityHigh} {
-		for _, f := range a.BySeverity[sev] {
-			a.TopRisks = append(a.TopRisks, fmt.Sprintf("[%s] %s: %s", sev, f.OSVID, f.Summary))
+		group := a.BySeverity[sev]
+		for i := range group {
+			a.TopRisks = append(a.TopRisks, fmt.Sprintf("[%s] %s: %s", sev, group[i].OSVID, group[i].Summary))
 		}
 	}
 
@@ -213,10 +225,10 @@ type reportNode struct {
 	repoPath string
 }
 
-func (n *reportNode) Name() string              { return "report" }
-func (n *reportNode) ElementAffinity() fw.Element { return fw.ElementAir }
+func (n *reportNode) Name() string              { return nodeReport }
+func (n *reportNode) ElementAffinity() circuit.Element { return circuit.ElementAir }
 
-func (n *reportNode) Process(_ context.Context, nc fw.NodeContext) (fw.Artifact, error) {
+func (n *reportNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("report: no prior artifact")
 	}
@@ -302,30 +314,8 @@ func formatReport(a *Assessment) string {
 			return sorted[i].Severity > sorted[j].Severity
 		})
 
-		for _, f := range sorted {
-			sc := severityColor(f.Severity)
-			b.WriteString(fmt.Sprintf("  %s%-10s%s %s%-20s%s %s\n",
-				sc, f.Severity, reset, bold, f.OSVID, reset, f.Summary))
-
-			b.WriteString(fmt.Sprintf("             module=%s@%s  fixed=%s",
-				f.Module, f.Version, f.FixedVersion))
-
-			if f.Package != "" {
-				b.WriteString(fmt.Sprintf("  pkg=%s", f.Package))
-			}
-			if f.Function != "" {
-				b.WriteString(fmt.Sprintf("  fn=%s", f.Function))
-			}
-			if f.CallSite != "" {
-				b.WriteString(fmt.Sprintf("  at=%s", f.CallSite))
-			}
-			b.WriteString("\n")
-
-			if len(f.Aliases) > 0 {
-				b.WriteString(fmt.Sprintf("             %saliases: %s%s\n",
-					dim, strings.Join(f.Aliases, ", "), reset))
-			}
-			b.WriteString("\n")
+		for i := range sorted {
+			formatFinding(&b, &sorted[i])
 		}
 	}
 
@@ -350,28 +340,55 @@ func riskColor(score float64) string {
 	}
 }
 
+// formatFinding writes a single finding's details to the report builder.
+func formatFinding(b *strings.Builder, f *Finding) {
+	sc := severityColor(f.Severity)
+	fmt.Fprintf(b, "  %s%-10s%s %s%-20s%s %s\n",
+		sc, f.Severity, reset, bold, f.OSVID, reset, f.Summary)
+
+	fmt.Fprintf(b, "             module=%s@%s  fixed=%s",
+		f.Module, f.Version, f.FixedVersion)
+
+	if f.Package != "" {
+		fmt.Fprintf(b, "  pkg=%s", f.Package)
+	}
+	if f.Function != "" {
+		fmt.Fprintf(b, "  fn=%s", f.Function)
+	}
+	if f.CallSite != "" {
+		fmt.Fprintf(b, "  at=%s", f.CallSite)
+	}
+	b.WriteString("\n")
+
+	if len(f.Aliases) > 0 {
+		fmt.Fprintf(b, "             %saliases: %s%s\n",
+			dim, strings.Join(f.Aliases, ", "), reset)
+	}
+	b.WriteString("\n")
+}
+
 // nodeFactory maps node names to their constructor functions.
-var nodeFactory = map[string]func(repoPath string) fw.Node{
-	"scan": func(repoPath string) fw.Node {
+var nodeFactory = map[string]func(repoPath string) circuit.Node{
+	nodeScan: func(repoPath string) circuit.Node {
 		return &scanNode{repoPath: repoPath, extractor: &GovulncheckExtractor{}}
 	},
-	"classify": func(_ string) fw.Node {
+	nodeClassify: func(_ string) circuit.Node {
 		return &classifyNode{extractor: &ClassifyExtractor{}}
 	},
-	"assess": func(repoPath string) fw.Node {
+	nodeAssess: func(repoPath string) circuit.Node {
 		return &assessNode{repoPath: repoPath}
 	},
-	"report": func(repoPath string) fw.Node {
+	nodeReport: func(repoPath string) circuit.Node {
 		return &reportNode{repoPath: repoPath}
 	},
 }
 
 // NodeRegistry builds the framework NodeRegistry for the achilles circuit.
 // When a CircuitDef is provided, node names are derived from the circuit
-// definition via toolkit.NodeNamesFromCircuit; otherwise the hardcoded
+// definition via engine.NodeNamesFromCircuit; otherwise the hardcoded
 // factory map is used as a fallback.
-func NodeRegistry(repoPath string, cd *fw.CircuitDef) fw.NodeRegistry {
-	names := toolkit.NodeNamesFromCircuit(cd)
+func NodeRegistry(repoPath string, cd *circuit.CircuitDef) engine.NodeRegistry {
+	names := engine.NodeNamesFromCircuit(cd)
 	if len(names) == 0 {
 		names = make([]string, 0, len(nodeFactory))
 		for k := range nodeFactory {
@@ -379,14 +396,14 @@ func NodeRegistry(repoPath string, cd *fw.CircuitDef) fw.NodeRegistry {
 		}
 	}
 
-	reg := fw.NodeRegistry{}
+	reg := engine.NodeRegistry{}
 	for _, name := range names {
 		factory, ok := nodeFactory[name]
 		if !ok {
 			continue
 		}
 		fn := factory
-		reg[name] = func(_ fw.NodeDef) fw.Node { return fn(repoPath) }
+		reg[name] = func(_ circuit.NodeDef) circuit.Node { return fn(repoPath) }
 	}
 	return reg
 }
