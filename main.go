@@ -126,7 +126,7 @@ func runScan(ctx context.Context, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	if err := runner.Walk(ctx, walker, def.Start); err != nil {
+	if err := runner.Walk(ctx, walker, string(def.Start)); err != nil {
 		return fmt.Errorf("circuit: %w", err)
 	}
 

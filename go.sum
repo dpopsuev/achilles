@@ -11,8 +11,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dpopsuev/bugle v0.14.0 h1:Zy3tIgTKjxi07t0y5DnL5ZaqNGDhAd9sWDriZFuenYU=
 github.com/dpopsuev/bugle v0.14.0/go.mod h1:AVY10j3YpgfMYmF4aumcBUyPp4ScfGUajqxreeCdKY8=
-github.com/dpopsuev/origami v0.4.0 h1:A6q1/ezDW/coqMJwvoS7nHHBhatu7D8XdFC23KtuhMY=
-github.com/dpopsuev/origami v0.4.0/go.mod h1:UMx9j6bvtT/zuYylgSnw7joo+adhk2prYSY5aTcLSfY=
+github.com/dpopsuev/origami v0.5.0 h1:OGPG6G5S5cvw3aH0o3jEwkO+2EF74lHa6D2fEB+Uc/E=
+github.com/dpopsuev/origami v0.5.0/go.mod h1:UMx9j6bvtT/zuYylgSnw7joo+adhk2prYSY5aTcLSfY=
 github.com/expr-lang/expr v1.17.8 h1:W1loDTT+0PQf5YteHSTpju2qfUfNoBt4yw9+wOEU9VM=
 github.com/expr-lang/expr v1.17.8/go.mod h1:8/vRC7+7HBzESEqt5kKpYXxrxkr31SaO8r40VO/1IT4=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=

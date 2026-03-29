@@ -2,7 +2,7 @@ module github.com/dpopsuev/achilles
 
 go 1.25.7
 
-require github.com/dpopsuev/origami v0.4.0
+require github.com/dpopsuev/origami v0.5.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
